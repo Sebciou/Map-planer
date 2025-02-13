@@ -6,9 +6,10 @@ from streamlit_folium import st_folium
 from io import BytesIO
 
 # Klucz API Google Geocoding i Directions
-GOOGLE_API_KEY = "AIzaSyDkWOkJfwOHwZf83KNv-u-DmcDgnNslU9Q"  # Tutaj wklej swój klucz API
+GOOGLE_API_KEY = "TWÓJ_KLUCZ_API"  # Tutaj wklej swój klucz API
 
 # Funkcja do geokodowania adresów za pomocą Google Geocoding API
+@st.cache_data  # Cache'owanie wyników geokodowania
 def geocode_address(address):
     url = f"https://maps.googleapis.com/maps/api/geocode/json?address={address}&key={GOOGLE_API_KEY}"
     try:
@@ -58,6 +59,9 @@ st.image("logo.png", width=200)  # Zmień "logo.png" na ścieżkę do swojego lo
 if 'selected_points' not in st.session_state:
     st.session_state.selected_points = []
 
+if 'geocoded_data' not in st.session_state:
+    st.session_state.geocoded_data = None
+
 # Wczytaj plik Excel
 uploaded_file = st.file_uploader("Wgraj plik Excel z adresami", type=["xlsx"])
 if uploaded_file:
@@ -84,10 +88,14 @@ if uploaded_file:
         # Utwórz kolumnę 'Adres' w formacie "miasto, ulica, kod pocztowy"
         df['Adres'] = df['Miasto'] + ", " + df['Ulica'] + ", " + df['Kod pocztowy']
 
-        # Geokodowanie adresów
-        st.write("Geokodowanie adresów...")
-        df['Współrzędne'] = df['Adres'].apply(geocode_address)
-        df[['Lat', 'Lon']] = pd.DataFrame(df['Współrzędne'].tolist(), index=df.index)
+        # Geokodowanie adresów (tylko raz, wyniki są cache'owane)
+        if st.session_state.geocoded_data is None:
+            st.write("Geokodowanie adresów...")
+            df['Współrzędne'] = df['Adres'].apply(geocode_address)
+            df[['Lat', 'Lon']] = pd.DataFrame(df['Współrzędne'].tolist(), index=df.index)
+            st.session_state.geocoded_data = df  # Zapisz dane w stanie sesji
+        else:
+            df = st.session_state.geocoded_data  # Użyj wcześniej geokodowanych danych
 
         # Lista adresów, których nie udało się zgeokodować
         failed_geocoding = df[df['Lat'].isna() | df['Lon'].isna()]
@@ -156,7 +164,7 @@ if uploaded_file:
             # Interaktywna mapa w Streamlit
             map_data = st_folium(m, width=700, height=500)
 
-        # Zaznaczanie punktów
+        # Zaznaczanie punktów bez odświeżania strony
         if map_data.get("last_object_clicked"):
             clicked_lat = map_data["last_object_clicked"]["lat"]
             clicked_lon = map_data["last_object_clicked"]["lng"]
@@ -169,13 +177,8 @@ if uploaded_file:
                 # Dodaj lub usuń zaznaczony punkt z listy
                 if selected_pm not in st.session_state.selected_points:
                     st.session_state.selected_points.append(selected_pm)
-                    st.write(f"Zaznaczono punkt: {selected_pm}")
                 else:
                     st.session_state.selected_points.remove(selected_pm)
-                    st.write(f"Odznaczono punkt: {selected_pm}")
-
-                # Wymuś odświeżenie mapy
-                st.rerun()
 
         # Wyświetl zaznaczone punkty i czas przejazdu w prawej kolumnie
         with col2:
