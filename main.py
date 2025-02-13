@@ -71,9 +71,21 @@ if uploaded_file:
     if not all(column in df.columns for column in required_columns):
         st.error("Plik Excel musi zawierać kolumny: Ulica, Miasto, Kod pocztowy, Nazwa PM, PLA, Opis, Kategoria.")
     else:
+        # Upewnij się, że kolumny są typu string
+        df['Miasto'] = df['Miasto'].astype(str)
+        df['Ulica'] = df['Ulica'].astype(str)
+        df['Kod pocztowy'] = df['Kod pocztowy'].astype(str)
+
+        # Zastąp brakujące wartości (NaN) pustymi ciągami
+        df['Miasto'] = df['Miasto'].fillna('')
+        df['Ulica'] = df['Ulica'].fillna('')
+        df['Kod pocztowy'] = df['Kod pocztowy'].fillna('')
+
+        # Utwórz kolumnę 'Adres' w formacie "miasto, ulica, kod pocztowy"
+        df['Adres'] = df['Miasto'] + ", " + df['Ulica'] + ", " + df['Kod pocztowy']
+
         # Geokodowanie adresów
         st.write("Geokodowanie adresów...")
-        df['Adres'] = df['Miasto'] + ", " + df['Ulica'] + ", " + df['Kod pocztowy']
         df['Współrzędne'] = df['Adres'].apply(geocode_address)
         df[['Lat', 'Lon']] = pd.DataFrame(df['Współrzędne'].tolist(), index=df.index)
 
@@ -115,9 +127,9 @@ if uploaded_file:
 
             # Definiuj kolory dla kategorii
             category_colors = {
-                "Serwis": "blue",
-                "Reklamacja": "green",
-                "Montaż": "orange",
+                "Sklep": "blue",
+                "Restauracja": "green",
+                "Kino": "orange",
                 "Inne": "purple"
             }
 
