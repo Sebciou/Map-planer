@@ -6,7 +6,7 @@ from streamlit_folium import st_folium
 from io import BytesIO
 
 # Klucz API Google Geocoding i Directions
-GOOGLE_API_KEY = "AIzaSyDkWOkJfwOHwZf83KNv-u-DmcDgnNslU9Q"  # Tutaj wklej swój klucz APIh
+GOOGLE_API_KEY = "AIzaSyDkWOkJfwOHwZf83KNv-u-DmcDgnNslU9Q"  # Tutaj wklej swój klucz API
 
 # Funkcja do geokodowania adresów za pomocą Google Geocoding API
 @st.cache_data  # Cache'owanie wyników geokodowania
@@ -135,9 +135,9 @@ if uploaded_file:
 
             # Definiuj kolory dla kategorii
             category_colors = {
-                "Sklep": "blue",
-                "Restauracja": "green",
-                "Kino": "orange",
+                "Serwis": "blue",
+                "Reklamacja": "green",
+                "Montaż": "orange",
                 "Inne": "purple"
             }
 
@@ -162,7 +162,7 @@ if uploaded_file:
                 ).add_to(m)
 
             # Interaktywna mapa w Streamlit
-            map_data = st_folium(m, width=700, height=500)
+            map_data = st_folium(m, width=700, height=500, key="map")
 
         # Zaznaczanie punktów bez odświeżania strony
         if map_data.get("last_object_clicked"):
@@ -179,6 +179,9 @@ if uploaded_file:
                     st.session_state.selected_points.append(selected_pm)
                 else:
                     st.session_state.selected_points.remove(selected_pm)
+
+                # Wymuś odświeżenie mapy
+                st.experimental_rerun()
 
         # Wyświetl zaznaczone punkty i czas przejazdu w prawej kolumnie
         with col2:
