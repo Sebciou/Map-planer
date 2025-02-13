@@ -6,7 +6,7 @@ from streamlit_folium import st_folium
 from io import BytesIO
 
 # Klucz API Google Geocoding i Directions
-GOOGLE_API_KEY = "TWÓJ_KLUCZ_API"  # Tutaj wklej swój klucz API
+GOOGLE_API_KEY = "AIzaSyDkWOkJfwOHwZf83KNv-u-DmcDgnNslU9Q"  # Tutaj wklej swój klucz API
 
 # Funkcja do geokodowania adresów za pomocą Google Geocoding API
 @st.cache_data  # Cache'owanie wyników geokodowania
