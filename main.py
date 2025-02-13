@@ -135,9 +135,9 @@ if uploaded_file:
 
             # Definiuj kolory dla kategorii
             category_colors = {
-                "Sklep": "blue",
-                "Restauracja": "green",
-                "Kino": "orange",
+                "Serwis": "blue",
+                "Reklamacja": "green",
+                "Montaż": "orange",
                 "Inne": "purple"
             }
 
