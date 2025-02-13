@@ -94,7 +94,7 @@ if uploaded_file:
         # Wyświetl mapę w lewej kolumnie (większa mapa)
         with col1:
             st.write("Mapa z adresami:")
-            m = folium.Map(location=[df['Lat'].mean(), df['Lon'].mean()], zoom_start=6)
+            m = folium.Map(location=[df['Lat'].mean(), df['Lon'].mean()], zoom_start=7)
 
             # Definiuj kolory dla kategorii
             category_colors = {
