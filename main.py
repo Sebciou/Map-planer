@@ -135,9 +135,9 @@ if uploaded_file:
 
             # Definiuj kolory dla kategorii
             category_colors = {
-                "Serwis": "blue",
-                "Reklamacja": "green",
-                "Montaż": "orange",
+                "Sklep": "blue",
+                "Restauracja": "green",
+                "Kino": "orange",
                 "Inne": "purple"
             }
 
@@ -162,7 +162,7 @@ if uploaded_file:
                 ).add_to(m)
 
             # Interaktywna mapa w Streamlit
-            map_data = st_folium(m, width=700, height=500, key="map")
+            map_data = st_folium(m, width=700, height=500, key="map", return_on_hover=False)
 
         # Zaznaczanie punktów bez odświeżania strony
         if map_data.get("last_object_clicked"):
@@ -179,9 +179,6 @@ if uploaded_file:
                     st.session_state.selected_points.append(selected_pm)
                 else:
                     st.session_state.selected_points.remove(selected_pm)
-
-                # Wymuś odświeżenie mapy
-                st.experimental_rerun()
 
         # Wyświetl zaznaczone punkty i czas przejazdu w prawej kolumnie
         with col2:
