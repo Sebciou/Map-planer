@@ -4,8 +4,6 @@ import requests
 import folium
 from streamlit_folium import st_folium
 from io import BytesIO
-from openpyxl import Workbook
-from openpyxl.styles import Border, Side  # Dodano do formatowania obrysów komórek
 
 # Klucz API Google Geocoding i Directions
 GOOGLE_API_KEY = "AIzaSyDkWOkJfwOHwZf83KNv-u-DmcDgnNslU9Q"  # Tutaj wklej swój klucz API
@@ -75,7 +73,7 @@ if uploaded_file:
     else:
         # Geokodowanie adresów
         st.write("Geokodowanie adresów...")
-        df['Adres'] = df['Ulica'] + ", " + df['Miasto'] + ", " + df['Kod pocztowy']
+        df['Adres'] = df['Miasto'] + ", " + df['Ulica'] + ", " + df['Kod pocztowy']
         df['Współrzędne'] = df['Adres'].apply(geocode_address)
         df[['Lat', 'Lon']] = pd.DataFrame(df['Współrzędne'].tolist(), index=df.index)
 
@@ -88,19 +86,38 @@ if uploaded_file:
         # Usuń adresy, których nie udało się zgeokodować
         df = df.dropna(subset=['Lat', 'Lon'])
 
+        # Oblicz średnią wartość współrzędnych
+        mean_lat = df['Lat'].mean()
+        mean_lon = df['Lon'].mean()
+
+        # Oblicz rozproszenie punktów
+        lat_range = df['Lat'].max() - df['Lat'].min()
+        lon_range = df['Lon'].max() - df['Lon'].min()
+        max_range = max(lat_range, lon_range)
+
+        # Ustaw poziom zoom na podstawie rozproszenia punktów
+        if max_range < 0.1:
+            zoom_start = 13
+        elif max_range < 0.5:
+            zoom_start = 11
+        elif max_range < 1:
+            zoom_start = 9
+        else:
+            zoom_start = 7
+
         # Podziel ekran na dwie kolumny: mapa (2/3 szerokości) i panel boczny (1/3 szerokości)
         col1, col2 = st.columns([2, 1])
 
-        # Wyświetl mapę w lewej kolumnie (większa mapa)
+        # Wyświetl mapę w lewej kolumnie
         with col1:
             st.write("Mapa z adresami:")
-            m = folium.Map(location=[df['Lat'].mean(), df['Lon'].mean()], zoom_start=7)
+            m = folium.Map(location=[mean_lat, mean_lon], zoom_start=zoom_start)
 
             # Definiuj kolory dla kategorii
             category_colors = {
                 "Serwis": "blue",
-                "Montaż": "green",
-                "Reklamacja": "orange",
+                "Reklamacja": "green",
+                "Montaż": "orange",
                 "Inne": "purple"
             }
 
@@ -124,8 +141,8 @@ if uploaded_file:
                     icon=folium.Icon(color=marker_color)
                 ).add_to(m)
 
-            # Interaktywna mapa w Streamlit (większa szerokość)
-            map_data = st_folium(m, width=900, height=500)  # Zwiększono szerokość mapy
+            # Interaktywna mapa w Streamlit
+            map_data = st_folium(m, width=700, height=500)
 
         # Zaznaczanie punktów
         if map_data.get("last_object_clicked"):
@@ -174,32 +191,17 @@ if uploaded_file:
                         if duration and distance:
                             st.write(f"{i + 1}. {start_point} -> {end_point}: {duration} ({distance})")
 
-                # Przygotuj dane do eksportu zgodnie z nowym szablonem
+                # Przygotuj dane do eksportu
                 selected_df = df[df['Nazwa PM'].isin(st.session_state.selected_points)]
                 selected_df = selected_df.set_index('Nazwa PM').loc[st.session_state.selected_points].reset_index()
 
-                # Utwórz nowy plik Excel z formułami i obrysami komórek
-                wb = Workbook()
-                ws = wb.active
-
-                # Dodaj nagłówki zgodnie z nowym szablonem
-                headers = ["PLA", "HIPSEX", "Ultra", "Minato", "Kod pocztowy", "Nazwa PM", "Kategoria"]
-                ws.append(headers)
-
-                # Dodaj dane
-                for _, row in selected_df.iterrows():
-                    ws.append([row["PLA"], "", "", "", row["Kod pocztowy"], row["Nazwa PM"], row["Kategoria"]])
-
-                # Dodaj obrysy komórek
-                thin_border = Border(left=Side(style='thin'), right=Side(style='thin'), top=Side(style='thin'), bottom=Side(style='thin'))
-                for row in ws.iter_rows(min_row=2, max_row=len(selected_df) + 1, min_col=1, max_col=7):
-                    for cell in row:
-                        cell.border = thin_border  # Dodaj obrysy komórek
-
-                # Zapisz plik Excel do bufora
+                # Zapisz DataFrame do bufora w pamięci
                 output = BytesIO()
-                wb.save(output)
-                output.seek(0)
+                with pd.ExcelWriter(output) as writer:
+                    # Ustal kolejność kolumn
+                    columns_order = ["Ulica", "Miasto", "Kod pocztowy", "Nazwa PM", "PLA", "Opis", "Kategoria"]
+                    selected_df[columns_order].to_excel(writer, index=False)
+                output.seek(0)  # Przewiń bufor na początek
 
                 # Przycisk do pobrania pliku Excel
                 st.download_button(
